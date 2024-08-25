@@ -1,13 +1,17 @@
-const formidable = require("formidable");
-
+const { formidable } = require("formidable");
+const validator = require("validator");
+const jwt = require("jsonwebtoken");
+const registerModel = require("../models/authModel");
+const fs = require("fs");
+const bcrypt = require("bcrypt");
 module.exports.userRegister = (req, res) => {
   const form = formidable({});
   form.parse(req, async (err, fields, files) => {
     // presented as arrays...
     const { userName, email, password, confirmPassword } = fields;
     const { image } = files;
-    const error = [];
 
+    const error = [];
     if (!userName) {
       error.push("Please provide your user name");
     }
@@ -43,13 +47,14 @@ module.exports.userRegister = (req, res) => {
       });
     } else {
       const getImageName = image[0].originalFilename;
-      const randNumber = Math.floor(Math.random() * 99999);
+      const currentDateInMs = Date.now(); // Get current date in milliseconds
+      const randNumber = Math.floor(Math.random() * 9999); // Generate a random number between 0 and 9999
       const regex = /^(.*)\.([^.]*)$/;
       const info = String(getImageName).match(regex);
-      const newImageName = info[1] + randNumber + "." + info[2];
+      const newImageName = `${currentDateInMs}-${randNumber}-${info[1]}.${info[2]}`;
       files.image[0].originalFilename = newImageName;
 
-      const newPath = `/home/slavkososic/Desktop/Practices/MERN/messanger-app/frontend/public/image/${files.image[0].originalFilename}`;
+      const newPath = `/home/slavkososic/Desktop/Practices/ChatWithMe/ChatWithMe-frontend/public/images/${files.image[0].originalFilename}`;
       try {
         const findUser = await registerModel.findOne({
           email: email,
@@ -57,7 +62,7 @@ module.exports.userRegister = (req, res) => {
         if (findUser) {
           res.status(404).json({
             error: {
-              errorMessage: ["Your email already exited"],
+              errorMessage: ["Your email already exists"],
             },
           });
         } else {
@@ -91,7 +96,7 @@ module.exports.userRegister = (req, res) => {
                 ),
               };
               res.status(201).cookie("authToken", token, options).json({
-                successMessage: "Your Register Successful",
+                successMessage: "Your registration was successful",
                 token,
               });
             }

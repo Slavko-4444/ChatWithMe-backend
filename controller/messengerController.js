@@ -1,4 +1,4 @@
-const User = require("../models/AuthModel");
+const User = require("../models/authModel");
 const messageModel = require("../models/messageModel");
 
 module.exports.getFriends = async (req, res) => {
@@ -17,7 +17,6 @@ module.exports.getFriends = async (req, res) => {
 };
 
 module.exports.messageUploadDB = async (req, res) => {
-  // middleware was added the id of user here...
   const { senderName, receiverId, message } = req.body;
   const senderId = req.myId;
   try {
@@ -43,27 +42,123 @@ module.exports.messageUploadDB = async (req, res) => {
   }
 };
 
+const updateStatusMessage = async (myId, fdId, status) => {
+  try {
+    const updateMessages = await messageModel.updateMany(
+      { senderId: fdId, receiverId: myId, status: { $ne: status } },
+      { $set: { status: status } }
+    );
+    return true;
+  } catch (error) {
+    return error;
+  }
+};
+
 module.exports.messageGet = async (req, res) => {
   const myId = req.myId;
   const fdId = req.params.id;
+  const { status } = req.body;
 
   try {
-    let getAllMessage = await messageModel.find({});
-
-    getAllMessage = getAllMessage.filter(
-      (m) =>
-        (m.senderId === myId && m.receiverId === fdId) ||
-        (m.receiverId === myId && m.senderId === fdId)
-    );
+    let isUpdated;
+    if (status) isUpdated = await updateStatusMessage(myId, fdId, status);
+    let getAllMessages = await getMessages(myId, fdId);
 
     res.status(200).json({
       success: true,
-      message: getAllMessage,
+      message: getAllMessages,
     });
   } catch (error) {
     res.status(500).json({
       error: {
         errorMessage: "Internal Server error",
+      },
+    });
+  }
+};
+
+const getMessages = async (myId, fdId) => {
+  try {
+    let getAllMessages = await messageModel.find({
+      $or: [
+        { senderId: myId, receiverId: fdId },
+        { senderId: fdId, receiverId: myId },
+      ],
+    });
+    return getAllMessages;
+  } catch (error) {
+    return error;
+  }
+};
+
+const getLastMessage = async (myId, fdId) => {
+  const msg = await messageModel
+    .findOne({
+      $or: [
+        {
+          $and: [
+            {
+              senderId: {
+                $eq: myId,
+              },
+            },
+            {
+              receiverId: {
+                $eq: fdId,
+              },
+            },
+          ],
+        },
+        {
+          $and: [
+            {
+              senderId: {
+                $eq: fdId,
+              },
+            },
+            {
+              receiverId: {
+                $eq: myId,
+              },
+            },
+          ],
+        },
+      ],
+    })
+    .sort({
+      updatedAt: -1,
+    });
+  return msg;
+};
+
+module.exports.getFriendsLastMsg = async (req, res) => {
+  const myId = req.myId;
+
+  let fnd_msg = [];
+  try {
+    const friendGet = await User.find({
+      _id: {
+        $ne: myId,
+      },
+    });
+    for (let i = 0; i < friendGet.length; i++) {
+      let lmsg = await getLastMessage(myId, friendGet[i].id);
+      fnd_msg.push({
+        _id: friendGet[i]._id,
+        userName: friendGet[i].userName,
+        email: friendGet[i].email,
+        image: friendGet[i].image,
+        createdAt: friendGet[i].createdAt,
+        updatedAt: friendGet[i].updatedAt,
+        msgInfo: lmsg,
+      });
+    }
+
+    res.status(200).json({ success: true, friends: fnd_msg });
+  } catch (error) {
+    res.status(500).json({
+      error: {
+        errorMessage: "Internal Sever Error",
       },
     });
   }
