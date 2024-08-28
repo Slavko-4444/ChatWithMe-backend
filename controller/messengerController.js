@@ -1,5 +1,7 @@
 const User = require("../models/authModel");
 const messageModel = require("../models/messageModel");
+const { formidable } = require("formidable");
+const fs = require("fs");
 
 module.exports.getFriends = async (req, res) => {
   const myId = req.myId;
@@ -19,6 +21,7 @@ module.exports.getFriends = async (req, res) => {
 module.exports.messageUploadDB = async (req, res) => {
   const { senderName, receiverId, message } = req.body;
   const senderId = req.myId;
+  clg;
   try {
     const insertMessage = await messageModel.create({
       senderId: senderId,
@@ -133,7 +136,6 @@ const getLastMessage = async (myId, fdId) => {
 
 module.exports.getFriendsLastMsg = async (req, res) => {
   const myId = req.myId;
-
   let fnd_msg = [];
   try {
     const friendGet = await User.find({
@@ -162,4 +164,70 @@ module.exports.getFriendsLastMsg = async (req, res) => {
       },
     });
   }
+};
+
+module.exports.messageSeen = async (req, res) => {
+  const messageId = req.body._id;
+
+  await messageModel
+    .findByIdAndUpdate(messageId, {
+      status: "seen",
+    })
+    .then(() => {
+      res.status(200).json({
+        success: true,
+      });
+    })
+    .catch(() => {
+      res.status(500).json({
+        error: {
+          errorMessage: "Internal Server Error",
+        },
+      });
+    });
+};
+
+// check this route...
+module.exports.ImageMessageSend = (req, res) => {
+  const form = formidable({});
+  const senderId = req.myId;
+
+  form.parse(req, (err, fields, files) => {
+    const { senderName, receiverId, imageName } = fields;
+    const { image } = files;
+    const newPath = `/home/slavkososic/Desktop/Practices/ChatWithMe/ChatWithMe-frontend/public/images/${imageName}`;
+    files.image[0].originalFilename = imageName[0];
+    try {
+      fs.copyFile(files.image[0].filepath, newPath, async (err) => {
+        if (err) {
+          res.status(500).json({
+            error: {
+              errorMessage: "Image upload fail",
+            },
+          });
+        } else {
+          const insertMessage = await messageModel.create({
+            senderId: senderId,
+            senderName: senderName[0],
+            receiverId: receiverId[0],
+            message: {
+              text: "",
+              image: files.image[0].originalFilename,
+            },
+          });
+          res.status(201).json({
+            success: true,
+            message: insertMessage,
+          });
+        }
+      });
+    } catch (error) {
+      console.log("sta je", error);
+      res.status(500).json({
+        error: {
+          errorMessage: "Internal Sever Error",
+        },
+      });
+    }
+  });
 };
