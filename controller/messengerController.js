@@ -18,33 +18,6 @@ module.exports.getFriends = async (req, res) => {
   }
 };
 
-module.exports.messageUploadDB = async (req, res) => {
-  const { senderName, receiverId, message } = req.body;
-  const senderId = req.myId;
-  clg;
-  try {
-    const insertMessage = await messageModel.create({
-      senderId: senderId,
-      senderName: senderName,
-      receiverId: receiverId,
-      message: {
-        text: message,
-        image: "",
-      },
-    });
-    res.status(201).json({
-      success: true,
-      message: insertMessage,
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: {
-        errorMessage: "Internal Sever Error",
-      },
-    });
-  }
-};
-
 const updateStatusMessage = async (myId, fdId, status) => {
   try {
     const updateMessages = await messageModel.updateMany(
@@ -187,47 +160,84 @@ module.exports.messageSeen = async (req, res) => {
     });
 };
 
-// check this route...
-module.exports.ImageMessageSend = (req, res) => {
+module.exports.storeMessage = (req, res) => {
   const form = formidable({});
   const senderId = req.myId;
 
-  form.parse(req, (err, fields, files) => {
-    const { senderName, receiverId, imageName } = fields;
-    const { image } = files;
-    const newPath = `/home/slavkososic/Desktop/Practices/ChatWithMe/ChatWithMe-frontend/public/images/${imageName}`;
-    files.image[0].originalFilename = imageName[0];
-    try {
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      return res.status(500).json({
+        error: {
+          errorMessage: "Form parsing failed",
+        },
+      });
+    }
+
+    const { senderName, receiverId, text, imageName } = fields;
+    const image = files.image;
+
+    // Check if there's an image and text in the request
+    if (image && image.length > 0) {
+      const newPath = `/home/slavkososic/Desktop/Practices/ChatWithMe/ChatWithMe-frontend/public/images/${imageName}`;
+      files.image[0].originalFilename = imageName[0];
+
       fs.copyFile(files.image[0].filepath, newPath, async (err) => {
         if (err) {
-          res.status(500).json({
+          return res.status(500).json({
             error: {
-              errorMessage: "Image upload fail",
+              errorMessage: "Image upload failed",
             },
           });
         } else {
-          const insertMessage = await messageModel.create({
-            senderId: senderId,
-            senderName: senderName[0],
-            receiverId: receiverId[0],
-            message: {
-              text: "",
-              image: files.image[0].originalFilename,
-            },
-          });
-          res.status(201).json({
-            success: true,
-            message: insertMessage,
-          });
+          // Save message with image
+
+          try {
+            const insertMessage = await messageModel.create({
+              senderId: senderId,
+              senderName: senderName[0],
+              receiverId: receiverId[0],
+              message: {
+                text: text && text[0] ? text[0] : "",
+                image: files.image[0].originalFilename,
+              },
+            });
+            return res.status(201).json({
+              success: true,
+              message: insertMessage,
+            });
+          } catch (error) {
+            console.log("opaa", error);
+            return res.status(500).json({
+              error: {
+                errorMessage: "Internal Server Error",
+              },
+            });
+          }
         }
       });
-    } catch (error) {
-      console.log("sta je", error);
-      res.status(500).json({
-        error: {
-          errorMessage: "Internal Sever Error",
-        },
-      });
+    } else {
+      try {
+        const insertMessage = await messageModel.create({
+          senderId: senderId,
+          senderName: senderName[0],
+          receiverId: receiverId[0],
+          message: {
+            text: text[0] || "",
+            image: "",
+          },
+        });
+        return res.status(201).json({
+          success: true,
+          message: insertMessage,
+        });
+      } catch (error) {
+        console.log("opa 2", error);
+        return res.status(500).json({
+          error: {
+            errorMessage: "Internal Server Error",
+          },
+        });
+      }
     }
   });
 };
