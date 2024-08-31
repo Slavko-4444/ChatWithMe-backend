@@ -7,6 +7,15 @@ const dataBaseConnection = require("./config/database");
 const authRouter = require("./routes/authRoute");
 const messengerRouter = require("./routes/messangerRoute");
 const cors = require("cors");
+const http = require("http");
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
 
 dotenv.config({
   path: "config/config.env",
@@ -19,15 +28,17 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(cookieParser());
 
-// routes...
+// calling the socket io...
+require("./socket/socket")(io);
+
 app.get("/", (req, res) => {
   res.json({ answer: "This is my app!!!" });
 });
 
-// they have to be same  (base url)
 app.use("/api/chat-with", authRouter);
 app.use("/api/chat-with", messengerRouter);
 
-app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+// app.listen(PORT, () => {
+//   console.log(`Listening on port ${PORT}`);
+// });
