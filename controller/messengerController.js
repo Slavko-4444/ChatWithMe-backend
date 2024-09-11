@@ -39,7 +39,6 @@ module.exports.messageGet = async (req, res) => {
     let isUpdated;
     if (status) isUpdated = await updateStatusMessage(myId, fdId, status);
     let getAllMessages = await getMessages(myId, fdId);
-
     res.status(200).json({
       success: true,
       message: getAllMessages,
@@ -175,7 +174,6 @@ module.exports.storeMessage = (req, res) => {
 
     const { senderName, receiverId, text, imageName } = fields;
     const image = files.image;
-
     // Check if there's an image and text in the request
     if (image && image.length > 0) {
       const newPath = `/home/slavkososic/Desktop/Practices/ChatWithMe/ChatWithMe-frontend/public/images/${imageName}`;
