@@ -38,7 +38,7 @@ app.get("/", (req, res) => {
 app.use("/api/chat-with", authRouter);
 app.use("/api/chat-with", messengerRouter);
 
+// static files
+app.use("/static", express.static("public"));
+
 server.listen(PORT, () => console.log(`Listening on port ${PORT}`));
-// app.listen(PORT, () => {
-//   console.log(`Listening on port ${PORT}`);
-// });

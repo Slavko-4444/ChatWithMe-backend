@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const registerModel = require("../models/authModel");
 const fs = require("fs");
 const bcrypt = require("bcrypt");
+
 module.exports.userRegister = (req, res) => {
   const form = formidable({});
   form.parse(req, async (err, fields, files) => {
@@ -54,7 +55,7 @@ module.exports.userRegister = (req, res) => {
       const newImageName = `${currentDateInMs}-${randNumber}-${info[1]}.${info[2]}`;
       files.image[0].originalFilename = newImageName;
 
-      const newPath = `/home/slavkososic/Desktop/Practices/ChatWithMe/ChatWithMe-frontend/public/images/${files.image[0].originalFilename}`;
+      const newPath = `./public/${files.image[0].originalFilename}`;
       try {
         const findUser = await registerModel.findOne({
           email: email,
@@ -67,6 +68,7 @@ module.exports.userRegister = (req, res) => {
           });
         } else {
           fs.copyFile(image[0].filepath, newPath, async (error) => {
+            console.log("ima li eroora", error);
             if (!error) {
               const userCreate = await registerModel.create({
                 userName: userName[0],
@@ -74,7 +76,6 @@ module.exports.userRegister = (req, res) => {
                 password: await bcrypt.hash(password[0], 10),
                 image: files.image[0].originalFilename,
               });
-              // console.log("registration Complete successfully");
 
               const token = jwt.sign(
                 {
@@ -98,6 +99,12 @@ module.exports.userRegister = (req, res) => {
               res.status(201).cookie("authToken", token, options).json({
                 successMessage: "Your registration was successful",
                 token,
+              });
+            } else {
+              return res.status(500).json({
+                error: {
+                  errorMessage: ["Unsuccessfuly profile store action..."],
+                },
               });
             }
           });
