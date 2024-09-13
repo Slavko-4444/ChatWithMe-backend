@@ -56,7 +56,7 @@ module.exports.userRegister = (req, res) => {
       const newImageName = `${currentDateInMs}-${randNumber}-${info[1]}.${info[2]}`;
       files.image[0].originalFilename = newImageName;
 
-      const newPath = __dirname + `/public/${files.image[0].originalFilename}`;
+      const newPath = `./public/${files.image[0].originalFilename}`;
       try {
         const findUser = await registerModel.findOne({
           email: email,
@@ -100,8 +100,7 @@ module.exports.userRegister = (req, res) => {
                 successMessage: "Your registration was successful",
                 token,
               });
-            } else if (error) {
-              console.log("ima li eroora", error);
+            } else {
               return res.status(500).json({
                 error: {
                   errorMessage: ["Unsuccessfuly profile store action..."],
