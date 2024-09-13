@@ -7,6 +7,7 @@ const bcrypt = require("bcrypt");
 
 module.exports.userRegister = (req, res) => {
   const form = formidable({});
+
   form.parse(req, async (err, fields, files) => {
     // presented as arrays...
     const { userName, email, password, confirmPassword } = fields;
@@ -55,7 +56,7 @@ module.exports.userRegister = (req, res) => {
       const newImageName = `${currentDateInMs}-${randNumber}-${info[1]}.${info[2]}`;
       files.image[0].originalFilename = newImageName;
 
-      const newPath = `./public/${files.image[0].originalFilename}`;
+      const newPath = __dirname + `/public/${files.image[0].originalFilename}`;
       try {
         const findUser = await registerModel.findOne({
           email: email,
@@ -68,7 +69,6 @@ module.exports.userRegister = (req, res) => {
           });
         } else {
           fs.copyFile(image[0].filepath, newPath, async (error) => {
-            console.log("ima li eroora", error);
             if (!error) {
               const userCreate = await registerModel.create({
                 userName: userName[0],
@@ -100,7 +100,8 @@ module.exports.userRegister = (req, res) => {
                 successMessage: "Your registration was successful",
                 token,
               });
-            } else {
+            } else if (error) {
+              console.log("ima li eroora", error);
               return res.status(500).json({
                 error: {
                   errorMessage: ["Unsuccessfuly profile store action..."],
