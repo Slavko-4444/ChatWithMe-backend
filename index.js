@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const dataBaseConnection = require("./config/database");
 const authRouter = require("./routes/authRoute");
 const messengerRouter = require("./routes/messangerRoute");
+var morgan = require("morgan");
 const cors = require("cors");
 const http = require("http");
 const server = http.createServer(app);
@@ -27,6 +28,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(cookieParser());
+
+// logger for routes
+app.use(morgan("tiny"));
 
 // calling the socket io...
 require("./socket/socket")(io);
