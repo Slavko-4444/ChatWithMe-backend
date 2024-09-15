@@ -4,7 +4,6 @@ const jwt = require("jsonwebtoken");
 const registerModel = require("../models/authModel");
 const fs = require("fs");
 const bcrypt = require("bcrypt");
-const errors = require("formidable/FormidableError");
 
 module.exports.userRegister = (req, res) => {
   const form = formidable({});
@@ -14,38 +13,38 @@ module.exports.userRegister = (req, res) => {
     const { userName, email, password, confirmPassword } = fields;
     const { image } = files;
 
-    const errors = [];
+    const error = [];
     if (!userName) {
-      errors.push("Please provide your user name");
+      error.push("Please provide your user name");
     }
     if (!email) {
-      errors.push("Please provide your Email");
+      error.push("Please provide your Email");
     }
     if (email && !validator.isEmail(email[0])) {
-      errors.push("Please provide your Valid Email");
+      error.push("Please provide your Valid Email");
     }
     if (!password) {
-      errors.push("Please provide your Password");
+      error.push("Please provide your Password");
     }
     if (!confirmPassword) {
-      errors.push("Please provide your confirm Password");
+      error.push("Please provide your confirm Password");
     }
     if (password && confirmPassword && password[0] !== confirmPassword[0]) {
-      errors.push("Your Password and Confirm Password not same");
+      error.push("Your Password and Confirm Password not same");
     }
     if (password && password[0].length < 6) {
-      errors.push("Please provide password must be 6 characters");
+      error.push("Please provide password must be 6 characters");
     }
 
     if (Object.keys(files).length === 0) {
-      errors.push("Please provide user image");
+      error.push("Please provide user image");
     }
 
     // check the errors... if there return the message, otherwise continue
-    if (errors.length > 0) {
+    if (error.length > 0) {
       res.status(400).json({
         error: {
-          errorMessage: errors,
+          errorMessage: error,
         },
       });
     } else {
@@ -69,8 +68,8 @@ module.exports.userRegister = (req, res) => {
             },
           });
         } else {
-          fs.copyFile(image[0].filepath, newPath, async (err) => {
-            if (!err) {
+          fs.copyFile(image[0].filepath, newPath, async (error) => {
+            if (!error) {
               const userCreate = await registerModel.create({
                 userName: userName[0],
                 email: email[0],
